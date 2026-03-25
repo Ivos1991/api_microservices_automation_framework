@@ -157,12 +157,12 @@ python -m pip install -r requirements.txt
 
 The live target used by this framework is the cloned sample microservices repo at:
 
-`C:\Users\Seguras\Downloads\cosas\real_targets\sample-microservices`
+`<your local path>/sample-microservices`
 
 Start the runtime:
 
 ```powershell
-cd C:\Users\Seguras\Downloads\cosas\real_targets\sample-microservices
+cd <your local path>/sample-microservices
 docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml up -d
 ```
 
@@ -224,6 +224,14 @@ Included workflows:
   Runs the full suite on a schedule and can also be triggered manually.
 
 The reusable workflow starts the real sample microservices runtime only for the jobs that need live verification.
+
+Pipeline features:
+
+- reusable workflow for shared pytest execution
+- stub-only PR safety checks
+- manual dispatch with selectable execution mode
+- scheduled full-regression support
+- artifact upload for Allure results
 
 ## Design Choices And Limitations
 
