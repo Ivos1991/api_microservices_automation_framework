@@ -2,7 +2,7 @@
 
 ## Objective
 
-Keep the framework test pyramid small, explicit, and credible.
+Keep the repository small, explicit, and credible as a backend automation portfolio project.
 
 ## Test Layers
 
@@ -14,9 +14,9 @@ Purpose:
 
 - validate one service slice at a time
 - keep assertions close to the business operation
-- avoid cross-service coupling unless the fixture explicitly prepares it
+- use local fixtures for setup and teardown
 
-Current examples:
+Covered slices:
 
 - product lookup
 - add item to cart
@@ -29,37 +29,51 @@ Located under `tests/integration_tests/`.
 Purpose:
 
 - compose multiple services explicitly
-- validate observable state transitions
-- keep orchestration in the test, not hidden in service modules
+- verify observable state and response transitions
+- keep orchestration in the test body
 
-Current examples:
+Covered flows:
 
-- all-stub product -> cart -> checkout baseline
-- real product + real cart + stub checkout bridge path
+- stub product -> cart -> checkout baseline
+- real product -> real cart -> real checkout
+- real product + real cart + stub checkout bridge
 
 ## Execution Strategy
 
 ### Stub Baseline
 
-Always keep the deterministic stub suite green.
+Default regression safety net:
 
-Why:
+- deterministic
+- local
+- no Docker dependency
 
-- it is the regression safety net
-- it proves the framework architecture without external runtime dependencies
+Recommended command:
 
-### Real-Target Tests
+```bash
+python -m pytest -q -m "not real_target" -p no:cacheprovider
+```
+
+### Real-Target Verification
 
 Use `real_target`-marked tests for live verification.
 
 Rules:
 
 - skip cleanly when the runtime is unreachable
-- do not overstate live verification
-- onboard one service at a time
+- treat readiness-probe `500` responses carefully when the live target rejects empty payloads
+- assert only verified live behavior
+- do not present live verification as broader than it is
+
+Recommended command:
+
+```bash
+python -m pytest -q -m real_target -p no:cacheprovider
+```
 
 ## Assertion Philosophy
 
 - keep business assertions in tests
 - keep service-layer assertions transport-oriented and minimal
-- normalize contract differences inside framework code when it improves test readability
+- normalize stub/real contract differences inside framework code
+- align real-target assertions with observed runtime behavior, not assumed downstream side effects

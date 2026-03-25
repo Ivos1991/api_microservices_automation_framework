@@ -82,7 +82,10 @@ class ConfigManager:
                 "CHECKOUT_SERVICE_STUB_BASE_URL",
                 os.getenv("CHECKOUT_SERVICE_BASE_URL", "http://localhost:8081"),
             ),
-            "checkout_service_real_base_url": os.getenv("CHECKOUT_SERVICE_REAL_BASE_URL", ""),
+            "checkout_service_real_base_url": os.getenv(
+                "CHECKOUT_SERVICE_REAL_BASE_URL",
+                "http://localhost:60001",
+            ),
             "default_cart_user_id": os.getenv("DEFAULT_CART_USER_ID", "demo-user"),
             "default_product_id": os.getenv("DEFAULT_PRODUCT_ID", "OLJCESPC7Z"),
             "default_product_quantity": int(os.getenv("DEFAULT_PRODUCT_QUANTITY", "1")),

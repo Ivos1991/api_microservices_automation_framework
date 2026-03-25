@@ -2,7 +2,7 @@
 
 ## Current Implementation Goal
 
-Preserve the implemented hybrid architecture in a portfolio-ready state without adding further service slices.
+Preserve the implemented architecture in a portfolio-ready state without adding further service slices or business flows.
 
 ## Implemented Slices
 
@@ -37,8 +37,9 @@ Completed:
 4. config manager and base API executor
 5. service slices for product catalog, cart, and checkout
 6. deterministic stub-mode service and integration tests
-7. incremental real-target routing for product catalog and cart
-8. portfolio-ready hybrid mode preparation
+7. incremental real-target routing for product catalog, cart, and checkout
+8. live verification of the real target runtime
+9. portfolio publishing preparation
 
 ## Intentionally Out Of Scope
 

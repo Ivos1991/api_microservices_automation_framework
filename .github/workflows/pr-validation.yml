@@ -1,0 +1,23 @@
+name: PR Validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: pr-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    uses: ./.github/workflows/run-suite.yml
+    with:
+      suite_name: PR Validation
+      test_target: tests
+      marker_expression: not real_target
+      pytest_args: -q -rs -p no:cacheprovider
+      artifact_name: pr-validation-artifacts
+      timeout_minutes: 20
+      start_real_runtime: false
