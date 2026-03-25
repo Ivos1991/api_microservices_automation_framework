@@ -10,12 +10,19 @@ from services.product_catalog_service.product_catalog_service_models import (
 from services.product_catalog_service.product_catalog_service_request import ProductCatalogServiceRequest
 
 
+def _get_required_value(payload: dict, *keys: str):
+    for key in keys:
+        if key in payload:
+            return payload[key]
+    raise KeyError(keys[0])
+
+
 def get_product_by_id(config: ConfigManager, request: GetProductByIdRequest) -> Product:
     request_data = ProductCatalogServiceRequest.get_product_by_id_request(request)
     response = ProductCatalogServiceAPI(config).get_product_by_id(product_id=request_data["product_id"])
     assert response.ok, "product_catalog_service get_product_by_id response status not OK"
     response_json = response.json()
-    price = response_json["price_usd"]
+    price = _get_required_value(response_json, "price_usd", "priceUsd")
     return Product(
         product_id=response_json["id"],
         name=response_json["name"],
@@ -23,7 +30,7 @@ def get_product_by_id(config: ConfigManager, request: GetProductByIdRequest) -> 
         picture_url=response_json["picture"],
         categories=response_json.get("categories", []),
         price=ProductPrice(
-            currency_code=price["currency_code"],
+            currency_code=_get_required_value(price, "currency_code", "currencyCode"),
             units=price["units"],
             nanos=price["nanos"],
         ),

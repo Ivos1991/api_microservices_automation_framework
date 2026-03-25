@@ -1,0 +1,65 @@
+name: Manual Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      execution_mode:
+        description: "Which execution mode to run"
+        required: true
+        default: stub
+        type: choice
+        options:
+          - stub
+          - real_target
+          - full
+      test_target:
+        description: "Pytest path, file, or directory target"
+        required: false
+        default: tests
+        type: string
+      pytest_args:
+        description: "Additional pytest arguments"
+        required: false
+        default: -q -rs -p no:cacheprovider
+        type: string
+
+concurrency:
+  group: manual-run-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run-stub:
+    if: ${{ inputs.execution_mode == 'stub' }}
+    uses: ./.github/workflows/run-suite.yml
+    with:
+      suite_name: Manual Run - Stub
+      test_target: ${{ inputs.test_target }}
+      marker_expression: not real_target
+      pytest_args: ${{ inputs.pytest_args }}
+      artifact_name: manual-run-stub-artifacts
+      timeout_minutes: 25
+      start_real_runtime: false
+
+  run-real-target:
+    if: ${{ inputs.execution_mode == 'real_target' }}
+    uses: ./.github/workflows/run-suite.yml
+    with:
+      suite_name: Manual Run - Real Target
+      test_target: ${{ inputs.test_target }}
+      marker_expression: real_target
+      pytest_args: ${{ inputs.pytest_args }}
+      artifact_name: manual-run-real-target-artifacts
+      timeout_minutes: 40
+      start_real_runtime: true
+
+  run-full:
+    if: ${{ inputs.execution_mode == 'full' }}
+    uses: ./.github/workflows/run-suite.yml
+    with:
+      suite_name: Manual Run - Full Suite
+      test_target: ${{ inputs.test_target }}
+      marker_expression: ""
+      pytest_args: ${{ inputs.pytest_args }}
+      artifact_name: manual-run-full-artifacts
+      timeout_minutes: 40
+      start_real_runtime: true

@@ -1,139 +1,151 @@
 # API Microservices Automation Framework
 
-API-first microservices automation framework built as a documentation-first portfolio project.
+Documentation-first API automation framework for a microservices demo system.
 
-The repository demonstrates a clean service-oriented automation structure inspired by a legacy enterprise test hierarchy, but modernized into a smaller, portfolio-safe framework with:
+This repository demonstrates a senior-level backend QA automation approach built around clear service boundaries, deterministic local execution, and honest live-target verification. It keeps the architecture intentionally small: three service slices, one verified business flow, explicit fixtures, reusable HTTP/reporting infrastructure, and no hidden orchestration.
 
-- explicit `service -> api -> request` layering
-- deterministic local stub execution
-- incremental real-target onboarding
-- reusable Allure reporting helpers
-- separate service and integration test layers
+## Project Summary
 
-## Project Overview
-
-This project targets a microservices demo system and validates backend business flows through service-level automation modules rather than UI-driven orchestration.
-
-Current implemented slices:
+Implemented service slices:
 
 - `product_catalog_service`
 - `cart_service`
 - `checkout_service`
 
-The framework supports two honest operating modes:
+Validated live business flow:
 
-- stub mode: fast, deterministic local development and validation
-- hybrid/real-target mode: controlled onboarding of real target services without forcing full migration
+- product -> cart -> checkout
+
+Execution modes:
+
+- stub mode for deterministic local validation
+- real-target mode for live verification against the sample microservices runtime
+
+The framework preserves the same service/API/request/test layering in both modes. Only configuration changes.
 
 ## Architecture Overview
 
-The project follows a strict layered structure:
-
 ```text
-src/
-├─ framework/
-│  ├─ api/
-│  ├─ config/
-│  └─ reporting/
-└─ services/
-   ├─ product_catalog_service/
-   ├─ cart_service/
-   └─ checkout_service/
-
-tests/
-├─ services_tests/
-└─ integration_tests/
+api-microservices-automation-framework/
+|-- docs/
+|-- src/
+|   |-- framework/
+|   |   |-- api/
+|   |   |-- config/
+|   |   `-- reporting/
+|   `-- services/
+|       |-- cart_service/
+|       |-- checkout_service/
+|       `-- product_catalog_service/
+|-- tests/
+|   |-- integration_tests/
+|   |-- services_tests/
+|   `-- support/
+|-- conftest.py
+|-- pytest.ini
+`-- README.md
 ```
 
 ### Layering Model
 
 - `*_service.py`
-  - orchestration layer used by tests
-  - performs thin response validation
-  - returns parsed domain-friendly models
-
+  Orchestrates request building, API execution, thin transport checks, and response normalization.
 - `*_service_api.py`
-  - thin transport layer
-  - owns endpoint routes and request execution
-
+  Owns endpoint paths and HTTP execution through the shared base API layer.
 - `*_service_request.py`
-  - payload/query construction only
-  - keeps transport and business assertions out of request builders
-
+  Owns request-body and query construction only.
+- `*_service_models.py`
+  Holds typed request and response models when they improve clarity.
 - tests
-  - own business assertions
-  - use local fixtures
-  - carry Allure suite metadata
+  Own business assertions, Allure suite metadata, and explicit scenario setup.
+
+This keeps transport concerns, payload construction, and scenario meaning separated.
 
 ## Tech Stack
 
 - Python 3
 - `pytest`
 - `requests`
-- `allure-pytest`
 - `assertpy`
+- `allure-pytest`
 - `python-dotenv`
 
-## Implemented Slices
+## Implemented Services
 
 ### Product Catalog
 
-- stub mode supported
-- real-target routing supported
-- real contract mapped to `GET /get-product?product_id=...`
+- Stub route supported
+- Real-target route supported
+- Real contract normalized behind `get_product_by_id(...)`
 
 ### Cart
 
-- stub mode supported
-- real-target routing supported
-- real add/get contract normalized behind the service layer
+- Stub route supported
+- Real-target route supported
+- Request/response differences normalized behind `add_item_to_cart(...)` and `get_cart(...)`
 
 ### Checkout
 
-- stub mode supported
-- intentionally still stub-only for execution
-- retained as the controlled boundary before full real-target migration
+- Stub route supported
+- Real-target route supported
+- Live checkout request/response differences normalized behind `checkout_cart(...)`
 
 ## Stub Mode Vs Real-Target Mode
 
 ### Stub Mode
 
-Default mode for local development.
+Purpose:
 
-Characteristics:
+- fast local development
+- deterministic regression safety net
+- no Docker dependency
 
-- root `conftest.py` starts a local fake service runtime
-- all implemented tests run deterministically
-- no external runtime is required
+Behavior:
+
+- root `conftest.py` starts the local fake runtime
+- all services resolve to stub URLs
+- service and integration tests run fully local
 
 ### Real-Target Mode
 
-Opt-in mode for incremental target onboarding.
+Purpose:
 
-Characteristics:
+- verify live contracts against the running sample microservices runtime
+- keep the same framework architecture while switching service backends through config
 
-- configured through environment variables
-- service backends can be switched independently
-- currently prepared for:
-  - real `product_catalog_service`
-  - real `cart_service`
-- `checkout_service` remains stubbed by design
+Behavior:
+
+- per-service backend routing is controlled by environment variables
+- the verified live setup uses:
+  - `http://localhost:60002` for product catalog
+  - `http://localhost:60003` for cart
+  - `http://localhost:60001` for checkout
+- real-target readiness checks skip cleanly if the runtime is unavailable
+
+Important honesty note:
+
+- the live runtime does not perfectly match the older documented contract in every field
+- the framework normalizes those differences instead of hiding them in tests
 
 ## Configuration
 
-Important environment variables:
+Key environment variables:
 
 - `FRAMEWORK_PROFILE=stub|real`
 - `DEFAULT_SERVICE_BACKEND=stub|real`
 - `PRODUCT_CATALOG_SERVICE_BACKEND=stub|real`
 - `CART_SERVICE_BACKEND=stub|real`
 - `CHECKOUT_SERVICE_BACKEND=stub|real`
-- `*_SERVICE_STUB_BASE_URL`
-- `*_SERVICE_REAL_BASE_URL`
+- `PRODUCT_CATALOG_SERVICE_STUB_BASE_URL`
+- `PRODUCT_CATALOG_SERVICE_REAL_BASE_URL`
+- `CART_SERVICE_STUB_BASE_URL`
+- `CART_SERVICE_REAL_BASE_URL`
+- `CHECKOUT_SERVICE_STUB_BASE_URL`
+- `CHECKOUT_SERVICE_REAL_BASE_URL`
 
-Example stub-first configuration is provided in [.env.example](C:/Users/Seguras/Downloads/cosas/ivo_personal/api-microservices-automation-framework/.env.example).
+Example defaults are provided in [.env.example](.env.example).
 
-## Running Tests
+## Setup
 
 Install dependencies:
 
@@ -141,93 +153,102 @@ Install dependencies:
 python -m pip install -r requirements.txt
 ```
 
-Run the deterministic local suite:
+## Docker Runtime Setup
 
-```bash
-python -m pytest -q
+The live target used by this framework is the cloned sample microservices repo at:
+
+`C:\Users\Seguras\Downloads\cosas\real_targets\sample-microservices`
+
+Start the runtime:
+
+```powershell
+cd C:\Users\Seguras\Downloads\cosas\real_targets\sample-microservices
+docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml up -d
 ```
 
-Run only real-target-aware tests:
+Stop the runtime:
 
-```bash
-python -m pytest -q -m real_target
+```powershell
+docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml down
 ```
 
-If the real target runtime is not reachable, those tests are designed to skip rather than fail noisily.
+## Running Tests
+
+Run the deterministic stub suite:
+
+```bash
+python -m pytest -q -m "not real_target" -p no:cacheprovider
+```
+
+Run the live real-target suite:
+
+```bash
+python -m pytest -q -m real_target -p no:cacheprovider
+```
+
+Run the whole repository:
+
+```bash
+python -m pytest -q -p no:cacheprovider
+```
 
 ## Allure Reporting
 
-Run tests with an Allure results directory:
+Generate results:
 
 ```bash
-python -m pytest --alluredir=allure-results
+python -m pytest -q --alluredir=allure-results -p no:cacheprovider
 ```
 
-Generate and open the report locally if Allure CLI is installed:
+Open a local report:
 
 ```bash
 allure serve allure-results
 ```
 
-Or generate static output:
+Generate static output:
 
 ```bash
 allure generate allure-results --clean -o allure-report
 ```
 
-## Enabling Real-Target Mode
+## GitHub Actions
 
-This repository currently targets the inspected `letsramp/sample-microservices` demo system.
+Included workflows:
 
-For live product catalog and cart routing:
+- `PR Validation`
+  Runs the stub-only suite for pull requests and pushes to `main`.
+- `Manual Run`
+  Lets you trigger `stub`, `real_target`, or `full` execution from GitHub Actions.
+- `Nightly Regression`
+  Runs the full suite on a schedule and can also be triggered manually.
 
-```bash
-set FRAMEWORK_PROFILE=real
-set DEFAULT_SERVICE_BACKEND=stub
-set PRODUCT_CATALOG_SERVICE_BACKEND=real
-set CART_SERVICE_BACKEND=real
-set CHECKOUT_SERVICE_BACKEND=stub
-set PRODUCT_CATALOG_SERVICE_REAL_BASE_URL=http://localhost:60002
-set CART_SERVICE_REAL_BASE_URL=http://localhost:60003
-```
+The reusable workflow starts the real sample microservices runtime only for the jobs that need live verification.
 
-Then run the real-target-marked tests:
+## Design Choices And Limitations
 
-```bash
-python -m pytest -q -m real_target
-```
+- The scope is intentionally narrow: three service slices and one verified business flow.
+- Stub mode remains the primary deterministic regression layer.
+- Real-target mode is honest about live runtime behavior instead of forcing the runtime to fit earlier assumptions.
+- The live sample runtime currently leaves cart contents intact after checkout, so tests assert observed behavior rather than an assumed side effect.
+- The project does not include UI automation, database assertions, or broad multi-service expansion.
 
-## Documentation
+## Why This Is Portfolio-Relevant
 
-Key design and reference docs:
+This project demonstrates:
 
-- [docs/target-architecture.md](C:/Users/Seguras/Downloads/cosas/ivo_personal/api-microservices-automation-framework/docs/target-architecture.md)
-- [docs/service-layer-conventions.md](C:/Users/Seguras/Downloads/cosas/ivo_personal/api-microservices-automation-framework/docs/service-layer-conventions.md)
-- [docs/fixture-strategy.md](C:/Users/Seguras/Downloads/cosas/ivo_personal/api-microservices-automation-framework/docs/fixture-strategy.md)
-- [docs/real-target-onboarding-plan.md](C:/Users/Seguras/Downloads/cosas/ivo_personal/api-microservices-automation-framework/docs/real-target-onboarding-plan.md)
-- [docs/real-target-service-mapping.md](C:/Users/Seguras/Downloads/cosas/ivo_personal/api-microservices-automation-framework/docs/real-target-service-mapping.md)
-
-## Limitations
-
-- checkout is still intentionally stubbed
-- live real-target execution was prepared, but depends on an external runtime being available
-- hybrid real product + real cart + stub checkout requires an explicit bridge test because stub checkout does not share state with the real cart service
-- the framework currently focuses on a narrow backend flow, not broad product coverage
-
-## Roadmap
-
-Reasonable next steps if this project is continued:
-
-1. run the real target reliably in local dev or CI
-2. live-verify the real product catalog and cart paths
-3. model the real checkout contract cleanly
-4. add CI workflows for stub mode and optional real-target verification
-
-## Portfolio Positioning
-
-This repository is intentionally scoped to show:
-
-- layered backend automation design
+- service-oriented API automation design
 - documentation-first engineering discipline
-- incremental legacy-to-clean-architecture translation
-- honest handling of real-target integration risk
+- contract normalization between stubbed and live systems
+- explicit fixture ownership and state handling
+- realistic backend integration testing with controlled scope
+- honest reporting of validated behavior and known limitations
+
+## Supporting Docs
+
+- [architecture overview](docs/architecture-overview.md)
+- [testing strategy](docs/testing-strategy.md)
+- [real runtime setup](docs/real-runtime-setup.md)
+- [execution model](docs/execution-model.md)
+- [known limitations](docs/known-limitations.md)
+- [verified live behavior](docs/verified-live-behavior.md)

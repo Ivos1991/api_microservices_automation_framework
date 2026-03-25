@@ -1,0 +1,107 @@
+name: Run Suite
+
+on:
+  workflow_call:
+    inputs:
+      suite_name:
+        required: true
+        type: string
+      test_target:
+        required: false
+        type: string
+        default: tests
+      marker_expression:
+        required: false
+        type: string
+        default: ""
+      pytest_args:
+        required: false
+        type: string
+        default: -q -rs -p no:cacheprovider
+      artifact_name:
+        required: true
+        type: string
+      timeout_minutes:
+        required: false
+        type: number
+        default: 30
+      start_real_runtime:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  run-tests:
+    name: ${{ inputs.suite_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    env:
+      ALLURE_RESULTS_DIR: artifacts/allure-results
+
+    steps:
+      - name: Checkout framework
+        uses: actions/checkout@v4
+
+      - name: Checkout sample microservices target
+        if: ${{ inputs.start_real_runtime }}
+        uses: actions/checkout@v4
+        with:
+          repository: letsramp/sample-microservices
+          path: external/sample-microservices
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install framework dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Start real sample microservices runtime
+        if: ${{ inputs.start_real_runtime }}
+        working-directory: external/sample-microservices
+        run: docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml up -d
+
+      - name: Wait for real runtime readiness
+        if: ${{ inputs.start_real_runtime }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..90}; do
+            product_status="$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:60002/get-product?product_id=OLJCESPC7Z' || true)"
+            cart_status="$(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:60003/cart/user_id/ci-readiness' || true)"
+            if [ "$product_status" = "200" ] && [ "$cart_status" = "200" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f external/sample-microservices/src/docker-compose.yml -f external/sample-microservices/skyramp/docker/demo/docker-compose.yml ps || true
+          exit 1
+
+      - name: Run pytest suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker_args=""
+          if [ -n "${{ inputs.marker_expression }}" ]; then
+            marker_args="-m \"${{ inputs.marker_expression }}\""
+          fi
+          eval "python -m pytest --alluredir=${ALLURE_RESULTS_DIR} ${{ inputs.test_target }} ${marker_args} ${{ inputs.pytest_args }}"
+
+      - name: Stop real sample microservices runtime
+        if: ${{ always() && inputs.start_real_runtime }}
+        working-directory: external/sample-microservices
+        run: docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml down
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          if-no-files-found: warn
+          path: |
+            artifacts/

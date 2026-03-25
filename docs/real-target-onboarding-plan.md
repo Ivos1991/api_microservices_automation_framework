@@ -2,7 +2,7 @@
 
 ## Objective
 
-Prepare the framework to support both:
+Record how the framework supports both:
 
 - deterministic local stub execution
 - incremental onboarding of the real microservices target
@@ -112,9 +112,18 @@ Implication:
 4. switch `checkout_service` last because it has the broadest downstream dependency set
 5. only after service-level validation should the integration flow mix in real services
 
-## Non-Goals For This Phase
+## Current Status
 
-- removing stubs
-- full end-to-end migration to the real target
-- broad new feature coverage
-- hidden runtime setup inside fixtures
+Completed in the framework:
+
+- real `product_catalog_service` routing
+- real `cart_service` routing
+- real `checkout_service` routing
+- real-target-aware service tests
+- real-target-aware integration tests
+- live runtime verification against the running sample microservices stack
+
+Publishing implication:
+
+- no new service onboarding is planned
+- this document remains as the rollout record for the now-verified target setup

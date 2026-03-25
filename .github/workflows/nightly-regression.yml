@@ -1,0 +1,22 @@
+name: Nightly Regression
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-regression-${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    uses: ./.github/workflows/run-suite.yml
+    with:
+      suite_name: Nightly Regression
+      test_target: tests
+      marker_expression: ""
+      pytest_args: -q -rs -p no:cacheprovider
+      artifact_name: nightly-regression-artifacts
+      timeout_minutes: 40
+      start_real_runtime: true

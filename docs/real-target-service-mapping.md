@@ -50,7 +50,9 @@ Payload difference:
 Response difference:
 
 - current stub returns product fields compatible with the framework model
-- real target response from `rest.go` also returns `id`, `name`, `description`, `picture`, `price_usd`, `categories`
+- source contracts still describe `price_usd`
+- live runtime verified on `2026-03-25` returned `priceUsd` and nested `currencyCode`
+- framework normalization must tolerate both naming styles
 
 Verified missing-product behavior:
 
@@ -128,6 +130,10 @@ Verified REST endpoint:
 
 - `POST /checkout`
 
+Verified host mapping from exposed compose setup:
+
+- `http://localhost:60001/checkout`
+
 Current framework endpoint:
 
 - `POST /checkout/user_id/{user_id}`
@@ -158,16 +164,31 @@ Response difference:
   - `shipping_tracking_id`
   - `shipping_cost`
   - `shipping_address`
-  - `items`, where each item wraps a nested `item` object and cost
+  - `items`, where each item wraps a nested `item` object
+- live runtime verified on `2026-03-25` omitted `zip_code` from `shipping_address`
+- live runtime verified on `2026-03-25` also omitted per-item `cost`
+- framework normalization must preserve the request zip code when the live response omits it
 
 Dependency difference:
 
 - current stub is self-contained
 - real target checkout depends on cart, product catalog, currency, payment, email, and shipping services
 
+Verified error behavior from source contract:
+
+- malformed or incomplete request parsing can return HTTP `501`
+- runtime failures in dependent downstream services can also surface as HTTP `501`
+
+Live readiness note verified on `2026-03-25`:
+
+- `POST /checkout` with `{}` returned HTTP `500` in the running compose environment even though a valid seeded checkout request succeeded with HTTP `200`
+- framework readiness checks must treat that `500` as endpoint reachability, not as proof that valid checkout is broken
+- live checkout also left the cart contents intact after a successful order; real-target integration assertions must not assume cart clearing
+
 Migration status:
 
-- keep stubbed for now
+- real-target routing implemented in framework
+- live runtime execution still environment-dependent
 
 ## Environment And Startup Requirements
 
@@ -193,39 +214,32 @@ Verified host-mapped demo compose:
 
 ## Narrowest Viable Real Flow
 
-The narrowest viable real flow that matches the current framework is:
+The target real flow implemented in the framework is:
 
 1. real `product_catalog_service` lookup
 2. real `cart_service` add/get
-3. keep `checkout_service` stubbed until the broader checkout payload and downstream dependencies are modeled
+3. real `checkout_service` execution
 
-Why:
+Important runtime note:
 
-- product catalog is read-only and contract-simple
-- cart adds one manageable payload/response difference
-- checkout has materially different payload and response shapes plus more runtime dependencies
+- the real checkout path only works when the full dependency graph is up, not just the three exposed services
 
 ## Stub Replacement Order
 
-Replace first:
+Implemented in framework:
 
 1. `product_catalog_service`
 2. `cart_service`
+3. `checkout_service`
 
-Remain stubbed for now:
+## What Still Depends On Stubs
 
-1. `checkout_service`
-
-## What Must Stay Stubbed For Now
-
-- simplified checkout request model
-- simplified checkout response model
-- local deterministic integration test baseline
-- any test depending on host execution without real target REST ports exposed
+- deterministic local baseline
+- local integration path independent of Docker/runtime availability
 
 ## Validation Note
 
-Implementation wiring for real `product_catalog_service` was completed in the framework and the real-target test path was executed.
+Implementation wiring for real `product_catalog_service`, `cart_service`, and `checkout_service` was completed in the framework and the real-target test paths were executed.
 
 Verified in this repository:
 
@@ -242,9 +256,11 @@ Verified in this repository:
 
 - stub mode remains green for cart, product catalog, checkout, and the existing integration baseline
 - cart add-to-cart request and response differences are normalized behind the framework service layer
-- a hybrid test path exists for real product catalog + real cart + stub checkout, using an explicit bridge instead of hidden state coupling
+- checkout request and response differences are normalized behind the framework service layer
+- a full real product -> cart -> checkout flow test exists in the suite
 
 Not verified live in this environment:
 
 - a successful HTTP call to the real cart service, because no reachable runtime was available at `http://localhost:60003`
-- a successful hybrid product/cart real-target execution for the same reason
+- a successful HTTP call to the real checkout service, because no reachable runtime was available at `http://localhost:60001`
+- a successful end-to-end real product/cart/checkout flow for the same reason

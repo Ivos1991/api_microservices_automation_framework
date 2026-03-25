@@ -33,3 +33,26 @@ The first CI target should remain simple:
 - manual workflow with selectable pytest target and markers
 
 Do not over-design CI in the first phase.
+
+## GitHub Workflow Shape
+
+The repository can now support a small workflow set:
+
+- PR validation running the stub-only suite
+- manual dispatch with selectable execution mode
+- scheduled nightly regression running the full suite
+
+The reusable workflow should:
+
+- install Python dependencies from `requirements.txt`
+- start the sample microservices Docker runtime only when real-target execution is requested
+- run pytest with the requested marker selection
+- upload Allure results as artifacts
+
+## Publishing Note
+
+The CI design remains intentionally small:
+
+- stub mode is the default PR safety net
+- real-target mode is available for manual and scheduled verification
+- the workflow layer mirrors the repository execution model instead of inventing new test types

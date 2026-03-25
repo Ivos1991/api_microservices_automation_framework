@@ -2,104 +2,93 @@
 
 ## Goal
 
-Build a clean API-first microservices automation framework that preserves the old service-test hierarchy while modernizing the framework layer.
+Keep a clean API-first automation framework with stable service boundaries and honest support for both stub and live execution.
 
 ## Repository Shape
 
 ```text
 api-microservices-automation-framework/
-├─ AGENTS.md
-├─ .env.example
-├─ .gitignore
-├─ conftest.py
-├─ pytest.ini
-├─ requirements.txt
-├─ README.md
-├─ docs/
-├─ src/
-│  ├─ framework/
-│  │  ├─ api/
-│  │  │  └─ base_api.py
-│  │  ├─ config/
-│  │  │  └─ config_manager.py
-│  │  └─ reporting/
-│  │     └─ allure_helpers.py
-│  └─ services/
-│     ├─ cart_service/
-│     ├─ product_catalog_service/
-│     └─ checkout_service/
-├─ tests/
-│  ├─ support/
-│  ├─ services_tests/
-│  │  ├─ cart_service_tests/
-│  │  ├─ product_catalog_service_tests/
-│  │  └─ checkout_service_tests/
-│  └─ integration_tests/
-└─ artifacts/
+|-- docs/
+|-- src/
+|   |-- framework/
+|   |   |-- api/
+|   |   |-- config/
+|   |   `-- reporting/
+|   `-- services/
+|       |-- cart_service/
+|       |-- checkout_service/
+|       `-- product_catalog_service/
+|-- tests/
+|   |-- integration_tests/
+|   |-- services_tests/
+|   `-- support/
+|-- conftest.py
+`-- README.md
 ```
 
 ## Layer Ownership
 
 ### `src/framework`
 
-Framework-owned technical infrastructure:
+Framework-owned technical concerns:
 
 - config loading
 - shared HTTP execution
-- reusable Allure attachments
+- reusable Allure helpers
 
 ### `src/services`
 
-Service-domain behavior:
+Service-domain concerns:
 
-- request payload construction
+- request construction
 - endpoint mapping
 - service orchestration
-- response parsing
+- response normalization
 
 ### `tests/services_tests`
 
-Single-domain service behavior:
+Single-slice verification:
 
 - one service slice at a time
-- local service fixtures
-- domain-focused assertions
+- explicit local fixtures
+- business assertions in tests
 
 ### `tests/integration_tests`
 
-Cross-step backend validation:
+Cross-service verification:
 
-- state before and after mutation
-- multi-call flows
-- explicit service composition
+- explicit product -> cart -> checkout composition
+- visible state setup and retrieval
+- no hidden scenario logic in service modules
 
 ## Execution Profiles
 
-The framework supports two execution directions without changing service boundaries:
+The framework supports:
 
-- deterministic stub-first local execution
-- incremental real-target execution through explicit per-service backend routing
+- deterministic stub execution
+- real-target execution through explicit per-service backend routing
 
-Service modules do not change between profiles. Only config decides whether a given service points to the local stub or the real target.
+Service modules do not change between profiles. Configuration selects the backend.
 
 ## Current Scope
 
-The repository currently implements three portfolio-safe slices:
+Implemented slices:
 
 - `product_catalog_service`
 - `cart_service`
 - `checkout_service`
 
-These slices support:
+Validated modes:
 
-- deterministic all-stub local execution
-- incremental real-target routing for product catalog and cart
-- a stable local hybrid baseline without forcing full migration
+- all-stub local baseline
+- real-target service verification for product catalog, cart, and checkout
+- real product -> real cart -> real checkout integration flow
+- real product + real cart + stub checkout bridge flow
 
 ## Deliberate Improvements Over The Old Repo
 
-- root `conftest.py` stays small and infrastructure-oriented
-- config manager is environment-driven and bounded
-- base API diagnostics are reusable and optional
-- typed models are limited to the slices that benefit from them
-- service and integration layers are kept distinct from the start
+- smaller root fixture surface
+- explicit environment-driven config manager
+- reusable but bounded HTTP diagnostics
+- typed models only where they improve clarity
+- documentation aligned to verified runtime behavior
