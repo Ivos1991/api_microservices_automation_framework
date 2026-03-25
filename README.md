@@ -241,9 +241,7 @@ Pipeline features:
 - The live sample runtime currently leaves cart contents intact after checkout, so tests assert observed behavior rather than an assumed side effect.
 - The project does not include UI automation, database assertions, or broad multi-service expansion.
 
-## Why This Is Portfolio-Relevant
-
-This project demonstrates:
+## What this project demonstrates:
 
 - service-oriented API automation design
 - documentation-first engineering discipline
