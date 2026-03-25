@@ -1,7 +1,5 @@
 # API Microservices Automation Framework
 
-Documentation-first API automation framework for a microservices demo system.
-
 This repository demonstrates a backend automation approach built around clear service boundaries, deterministic local execution, and honest live-target verification. It keeps the architecture intentionally small: three service slices, one verified business flow, explicit fixtures, reusable HTTP/reporting infrastructure, and no hidden orchestration.
 
 ## Project Summary
