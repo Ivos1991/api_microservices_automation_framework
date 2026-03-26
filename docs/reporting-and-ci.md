@@ -46,6 +46,7 @@ The reusable workflow should:
 
 - install Python dependencies from `requirements.txt`
 - start the sample microservices Docker runtime only when real-target execution is requested
+- pin the external `letsramp/sample-microservices` checkout to a known-good commit instead of floating on upstream `main`
 - run pytest with the requested marker selection
 - upload Allure results as artifacts
 

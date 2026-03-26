@@ -29,6 +29,10 @@ on:
         required: false
         type: boolean
         default: false
+      sample_microservices_ref:
+        required: false
+        type: string
+        default: bb847cbfb4615db8a41b71ef5c056f1bcb6e6dfd
 
 permissions:
   contents: read
@@ -50,6 +54,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: letsramp/sample-microservices
+          ref: ${{ inputs.sample_microservices_ref }}
           path: external/sample-microservices
 
       - name: Set up Python
@@ -61,10 +66,34 @@ jobs:
       - name: Install framework dependencies
         run: python -m pip install -r requirements.txt
 
+      - name: Patch known upstream runtime defects
+        if: ${{ inputs.start_real_runtime }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          clients_dockerfile = Path("external/sample-microservices/src/clients/Dockerfile")
+          original = "    && pip3 install --no-cache --upgrade pip \\\n    pip install -r requirements.txt\n"
+          fixed = "    && pip3 install --no-cache --upgrade pip \\\n    && pip install -r requirements.txt\n"
+
+          text = clients_dockerfile.read_text(encoding="utf-8")
+          if original in text:
+              clients_dockerfile.write_text(text.replace(original, fixed), encoding="utf-8")
+          PY
+
       - name: Start real sample microservices runtime
         if: ${{ inputs.start_real_runtime }}
         working-directory: external/sample-microservices
         run: docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml up -d
+
+      - name: Capture real runtime startup diagnostics
+        if: ${{ failure() && inputs.start_real_runtime }}
+        working-directory: external/sample-microservices
+        shell: bash
+        run: |
+          docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml ps || true
+          docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml logs --tail=200 || true
 
       - name: Wait for real runtime readiness
         if: ${{ inputs.start_real_runtime }}
@@ -94,8 +123,12 @@ jobs:
 
       - name: Stop real sample microservices runtime
         if: ${{ always() && inputs.start_real_runtime }}
-        working-directory: external/sample-microservices
-        run: docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml down
+        shell: bash
+        run: |
+          if [ -f external/sample-microservices/src/docker-compose.yml ] && [ -f external/sample-microservices/skyramp/docker/demo/docker-compose.yml ]; then
+            cd external/sample-microservices
+            docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml down
+          fi
 
       - name: Upload test artifacts
         if: always()
