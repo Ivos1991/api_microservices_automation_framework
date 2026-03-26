@@ -32,7 +32,7 @@ on:
       sample_microservices_ref:
         required: false
         type: string
-        default: e02aba5e6d5b1bd91e47b57e43f05383eb3a6b36
+        default: bb847cbfb4615db8a41b71ef5c056f1bcb6e6dfd
 
 permissions:
   contents: read
