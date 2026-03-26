@@ -29,6 +29,10 @@ on:
         required: false
         type: boolean
         default: false
+      sample_microservices_ref:
+        required: false
+        type: string
+        default: e02aba5
 
 permissions:
   contents: read
@@ -50,6 +54,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: letsramp/sample-microservices
+          ref: ${{ inputs.sample_microservices_ref }}
           path: external/sample-microservices
 
       - name: Set up Python
@@ -65,6 +70,14 @@ jobs:
         if: ${{ inputs.start_real_runtime }}
         working-directory: external/sample-microservices
         run: docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml up -d
+
+      - name: Capture real runtime startup diagnostics
+        if: ${{ failure() && inputs.start_real_runtime }}
+        working-directory: external/sample-microservices
+        shell: bash
+        run: |
+          docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml ps || true
+          docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml logs --tail=200 || true
 
       - name: Wait for real runtime readiness
         if: ${{ inputs.start_real_runtime }}
