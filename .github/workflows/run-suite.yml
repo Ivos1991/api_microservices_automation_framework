@@ -32,7 +32,7 @@ on:
       sample_microservices_ref:
         required: false
         type: string
-        default: e02aba5
+        default: e02aba5e6d5b1bd91e47b57e43f05383eb3a6b36
 
 permissions:
   contents: read
@@ -107,8 +107,12 @@ jobs:
 
       - name: Stop real sample microservices runtime
         if: ${{ always() && inputs.start_real_runtime }}
-        working-directory: external/sample-microservices
-        run: docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml down
+        shell: bash
+        run: |
+          if [ -f external/sample-microservices/src/docker-compose.yml ] && [ -f external/sample-microservices/skyramp/docker/demo/docker-compose.yml ]; then
+            cd external/sample-microservices
+            docker compose -f src/docker-compose.yml -f skyramp/docker/demo/docker-compose.yml down
+          fi
 
       - name: Upload test artifacts
         if: always()
