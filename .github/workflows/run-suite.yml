@@ -82,6 +82,15 @@ jobs:
               clients_dockerfile.write_text(text.replace(original, fixed), encoding="utf-8")
           PY
 
+      - name: Patch sample microservices runtime for archived Java base image
+        if: ${{ inputs.start_real_runtime }}
+        working-directory: external/sample-microservices
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i 's/^FROM openjdk:8-slim as builder$/FROM eclipse-temurin:8-jdk-jammy as builder/' src/adservice/Dockerfile
+          grep -n 'FROM .* as builder' src/adservice/Dockerfile
+
       - name: Start real sample microservices runtime
         if: ${{ inputs.start_real_runtime }}
         working-directory: external/sample-microservices
