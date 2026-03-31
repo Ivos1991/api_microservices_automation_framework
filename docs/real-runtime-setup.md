@@ -132,3 +132,4 @@ Verified on `2026-03-25`:
 - checkout depends on the full base stack; the exposed-port override is not sufficient by itself
 - real-target tests in this repository skip cleanly when the runtime is unreachable
 - `POST /checkout` with an empty payload may return HTTP `500` even while valid checkout requests succeed
+- GitHub Actions may need to patch archived upstream Docker image tags before startup; current CI replaces every `FROM openjdk:8-slim` line in `src/adservice/Dockerfile` with `FROM eclipse-temurin:8-jdk-jammy`

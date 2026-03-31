@@ -45,10 +45,33 @@ The repository can now support a small workflow set:
 The reusable workflow should:
 
 - install Python dependencies from `requirements.txt`
+- patch known-broken upstream runtime files after checkout when Docker base images disappear upstream
 - start the sample microservices Docker runtime only when real-target execution is requested
 - pin the external `letsramp/sample-microservices` checkout to a known-good commit instead of floating on upstream `main`
 - run pytest with the requested marker selection
 - upload Allure results as artifacts
+
+## Real-Runtime Stability Notes
+
+The nightly workflow depends on an external checked-out runtime:
+
+- `letsramp/sample-microservices`
+
+That dependency is not stable enough to treat as immutable infrastructure:
+
+- upstream Dockerfiles can reference base images that later disappear from Docker Hub
+- those failures happen before pytest starts and are not framework-code regressions
+
+Current guarded CI hotfix:
+
+- replace every `FROM openjdk:8-slim` line in `src/adservice/Dockerfile`
+- with `FROM eclipse-temurin:8-jdk-jammy`
+- fail the patch step if any `openjdk:8-slim` reference remains before `docker compose up -d`
+
+Reason for the hotfix:
+
+- Docker Hub no longer resolves `openjdk:8-slim`
+- nightly real-target startup otherwise fails during the `adservice` image build stage
 
 ## Publishing Note
 
