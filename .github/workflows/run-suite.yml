@@ -88,8 +88,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sed -i 's/^FROM openjdk:8-slim as builder$/FROM eclipse-temurin:8-jdk-jammy as builder/' src/adservice/Dockerfile
-          grep -n 'FROM .* as builder' src/adservice/Dockerfile
+          sed -Ei 's/^FROM openjdk:8-slim(.*)$/FROM eclipse-temurin:8-jdk-jammy\1/' src/adservice/Dockerfile
+          grep -n '^FROM ' src/adservice/Dockerfile
+          if grep -n 'openjdk:8-slim' src/adservice/Dockerfile; then
+            echo 'adservice Dockerfile still references removed openjdk:8-slim tag'
+            exit 1
+          fi
 
       - name: Start real sample microservices runtime
         if: ${{ inputs.start_real_runtime }}
